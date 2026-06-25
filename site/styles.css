@@ -353,7 +353,8 @@ code {
 }
 
 .usage-layout,
-.deploy-grid {
+.deploy-grid,
+.download-panel {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.75fr);
   gap: 18px;
@@ -369,6 +370,7 @@ code {
 
 .command-block,
 .json-sample,
+.download-panel,
 .checklist,
 .limits {
   min-width: 0;
@@ -382,6 +384,56 @@ code {
   background:
     linear-gradient(135deg, rgba(10, 166, 194, 0.08), rgba(33, 165, 107, 0.08)),
     var(--surface);
+}
+
+.downloads {
+  border-top: 1px solid var(--line);
+}
+
+.download-panel {
+  background:
+    linear-gradient(135deg, rgba(10, 166, 194, 0.08), transparent 36%),
+    var(--surface);
+}
+
+.download-panel > div {
+  min-width: 0;
+}
+
+.version-line {
+  margin-top: 12px;
+  color: var(--muted);
+}
+
+.download-list {
+  display: grid;
+  gap: 10px;
+}
+
+.download-list > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.download-list > div:last-child {
+  border-bottom: 0;
+}
+
+.download-link {
+  color: #075f70;
+  font-family: var(--mono);
+  font-weight: 800;
+}
+
+.download-list span {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 12px;
+  text-align: right;
 }
 
 .deploy {
@@ -514,6 +566,7 @@ code {
 
   .section-head,
   .usage-layout,
+  .download-panel,
   .deploy-grid {
     grid-template-columns: 1fr;
     min-width: 0;
@@ -584,5 +637,14 @@ code {
 
   .footer {
     flex-wrap: wrap;
+  }
+
+  .download-list > div {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .download-list span {
+    text-align: left;
   }
 }

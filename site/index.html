@@ -15,6 +15,7 @@
     />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -27,6 +28,7 @@
         <a href="#product">Product</a>
         <a href="#how">How it works</a>
         <a href="#usage">Usage</a>
+        <a href="#downloads">Downloads</a>
         <a href="#deploy">Deploy</a>
       </nav>
     </header>
@@ -46,7 +48,7 @@
             <a class="button secondary" href="#deploy">Deploy notes</a>
           </div>
           <div class="terminal" aria-label="Example command and output">
-            <pre><code>$ portlight expose --server https://preview.example.com --port 3000
+            <pre><code>$ portlight expose --port 3000
 https://myapp.preview.example.com</code></pre>
           </div>
         </div>
@@ -101,7 +103,6 @@ portlight server \
             <span class="step-number">02</span>
             <h3>Expose a port</h3>
             <pre><code>portlight expose \
-  --server https://preview.example.com \
   --port 3000</code></pre>
           </article>
           <article class="step">
@@ -125,15 +126,15 @@ portlight server \
           <div class="commands">
             <div class="command-block">
               <h3>Random URL</h3>
-              <pre><code>portlight expose --server https://preview.example.com --port 3000</code></pre>
+              <pre><code>portlight expose --port 3000</code></pre>
             </div>
             <div class="command-block">
               <h3>Machine-readable output</h3>
-              <pre><code>portlight expose --server https://preview.example.com --port 3000 --json</code></pre>
+              <pre><code>portlight expose --port 3000 --json</code></pre>
             </div>
             <div class="command-block">
               <h3>Named URL</h3>
-              <pre><code>portlight expose --server https://preview.example.com --port 3000 --name myapp</code></pre>
+              <pre><code>portlight expose --port 3000 --name myapp</code></pre>
             </div>
           </div>
           <div class="json-sample">
@@ -143,6 +144,27 @@ portlight server \
   "name": "myapp",
   "url": "https://myapp.preview.example.com"
 }</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="section downloads" id="downloads" aria-labelledby="downloads-title">
+        <div class="section-head">
+          <h2 id="downloads-title">Downloads</h2>
+          <p>
+            Install the latest binary for your platform, then keep it current
+            with one command.
+          </p>
+        </div>
+        <div class="download-panel">
+          <div>
+            <h3>Latest version</h3>
+            <p class="version-line" id="latest-version">Release metadata loads from /releases/latest.json.</p>
+            <pre><code>portlight update
+chmod +x ./portlight-linux-amd64</code></pre>
+          </div>
+          <div class="download-list" id="download-list" aria-live="polite">
+            <p>Run the release build to publish downloadable binaries.</p>
           </div>
         </div>
       </section>
@@ -193,5 +215,6 @@ portlight server \
       <a href="https://github.com/ichuan/portlight/blob/main/docs/deploy.md">Deploy</a>
       <a href="https://github.com/ichuan/portlight">GitHub</a>
     </footer>
+    <script src="releases.js"></script>
   </body>
 </html>

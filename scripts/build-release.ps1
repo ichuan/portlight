@@ -1,5 +1,7 @@
 param(
-  [string] $Version = 'dev'
+  [string] $Version = 'dev',
+  [string] $PublicBase = 'https://portlight.616.pub',
+  [switch] $PublishSite
 )
 
 $ErrorActionPreference = 'Stop'
@@ -33,4 +35,38 @@ foreach ($target in $targets) {
 Remove-Item env:GOOS, env:GOARCH, env:CGO_ENABLED -ErrorAction SilentlyContinue
 Get-ChildItem -Recurse $outRoot -File | ForEach-Object {
   "{0}  {1,12} bytes" -f $_.FullName, $_.Length
+}
+
+if ($PublishSite) {
+  $siteRoot = Join-Path $repo 'site'
+  $downloadsRoot = Join-Path $siteRoot 'downloads'
+  $releasesRoot = Join-Path $siteRoot 'releases'
+  New-Item -ItemType Directory -Force -Path $downloadsRoot, $releasesRoot | Out-Null
+
+  $files = @()
+  foreach ($target in $targets) {
+    $source = Join-Path (Join-Path $outRoot "$($target.os)-$($target.arch)") ("portlight" + $target.ext)
+    $name = "portlight-$($target.os)-$($target.arch)$($target.ext)"
+    $dest = Join-Path $downloadsRoot $name
+    Copy-Item -Force $source $dest
+    $hash = (Get-FileHash -Algorithm SHA256 $dest).Hash.ToLowerInvariant()
+    $files += [ordered]@{
+      os = $target.os
+      arch = $target.arch
+      name = $name
+      url = "$($PublicBase.TrimEnd('/'))/downloads/$name"
+      sha256 = $hash
+      size = (Get-Item $dest).Length
+    }
+  }
+
+  $latest = [ordered]@{
+    version = $Version
+    generatedAt = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+    files = $files
+  }
+  $json = $latest | ConvertTo-Json -Depth 5
+  $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+  [System.IO.File]::WriteAllText((Join-Path $releasesRoot 'latest.json'), $json + [Environment]::NewLine, $utf8NoBom)
+  Write-Host "Wrote site release metadata and downloads under $siteRoot"
 }

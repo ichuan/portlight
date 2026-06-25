@@ -1,0 +1,32 @@
+services:
+  server:
+    build:
+      context: .
+      args:
+        VERSION: ${PORTLIGHT_VERSION:-dev}
+    restart: unless-stopped
+    environment:
+      PORTLIGHT_TOKEN: ${PORTLIGHT_TOKEN:?set PORTLIGHT_TOKEN in .env}
+    command:
+      - server
+      - --listen
+      - 0.0.0.0:8789
+      - --public-base
+      - https://portlight.616.pub
+    ports:
+      - "127.0.0.1:8789:8789"
+
+  site:
+    image: caddy:2.10.0-alpine
+    restart: unless-stopped
+    command:
+      - caddy
+      - file-server
+      - --listen
+      - :8080
+      - --root
+      - /srv
+    volumes:
+      - ./site:/srv:ro
+    ports:
+      - "127.0.0.1:8790:8080"

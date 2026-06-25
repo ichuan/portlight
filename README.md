@@ -5,7 +5,7 @@ portlight exposes a local HTTP service through a public HTTPS URL that you contr
 Run a small server behind a wildcard domain, then run the CLI on your laptop or dev box:
 
 ```bash
-portlight expose --server https://preview.example.com --port 3000
+portlight expose --port 3000
 ```
 
 The CLI prints a URL such as:
@@ -38,20 +38,20 @@ Start the public server:
 export PORTLIGHT_TOKEN="$(openssl rand -base64 32)"
 portlight server \
   --listen 127.0.0.1:8789 \
-  --public-base https://preview.example.com
+  --public-base https://portlight.616.pub
 ```
 
 Expose a local port:
 
 ```bash
 export PORTLIGHT_TOKEN='<the same long random token>'
-portlight expose --server https://preview.example.com --port 3000
+portlight expose --port 3000
 ```
 
 Machine-readable output:
 
 ```bash
-portlight expose --server https://preview.example.com --port 3000 --json
+portlight expose --port 3000 --json
 ```
 
 ```json
@@ -63,7 +63,7 @@ portlight expose --server https://preview.example.com --port 3000 --json
 Request a specific subdomain:
 
 ```bash
-portlight expose --server https://preview.example.com --port 3000 --name myapp
+portlight expose --port 3000 --name myapp
 ```
 
 This yields:
@@ -87,8 +87,12 @@ When the original CLI process exits or disconnects, the name is released.
 ```bash
 portlight server --help
 portlight expose --help
+portlight update
 portlight --version
 ```
+
+`expose` and `update` default to `https://portlight.616.pub`. Use `--server`
+only when you run a separate portlight deployment.
 
 Important environment variable:
 

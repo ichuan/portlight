@@ -1,0 +1,11 @@
+.git
+dist
+tmp
+coverage.out
+/portlight
+site/downloads
+site/releases
+*.exe
+*.test
+*.out
+.env

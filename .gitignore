@@ -1,6 +1,8 @@
 dist/
 tmp/
-portlight
+/portlight
+site/downloads/
+site/releases/
 *.exe
 *.test
 *.out

@@ -3,8 +3,13 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -35,6 +40,17 @@ func TestRunExposeHelp(t *testing.T) {
 		if !strings.Contains(out, want) {
 			t.Fatalf("help output missing %q:\n%s", want, out)
 		}
+	}
+}
+
+func TestRunExposeHelpShowsDefaultServer(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code := run([]string{"expose", "--help"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("exit = %d, stderr=%s", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), defaultServerURL) {
+		t.Fatalf("help output missing default server %q:\n%s", defaultServerURL, stdout.String())
 	}
 }
 
@@ -99,6 +115,66 @@ func TestRunExposeRejectsInvalidConfig(t *testing.T) {
 				t.Fatalf("stderr = %q, want %q", stderr.String(), tt.want)
 			}
 		})
+	}
+}
+
+func TestRunUpdateCheck(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/releases/latest.json" {
+			t.Fatalf("path = %q, want /releases/latest.json", r.URL.Path)
+		}
+		fmt.Fprint(w, `{"version":"0.2.0","files":[{"os":"windows","arch":"amd64","url":"/downloads/portlight.exe","sha256":"abc"}]}`)
+	}))
+	defer srv.Close()
+	restore := setUpdateTestHooks(t, "windows", "amd64", filepath.Join(t.TempDir(), "portlight.exe"))
+	defer restore()
+
+	var stdout, stderr bytes.Buffer
+	code := run([]string{"update", "--server", srv.URL, "--check"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("exit = %d, stderr=%s", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "0.2.0") || !strings.Contains(stdout.String(), "available") {
+		t.Fatalf("stdout = %q, want update available", stdout.String())
+	}
+}
+
+func TestRunUpdateDownloadsAndApplies(t *testing.T) {
+	payload := []byte("new-binary")
+	sum := sha256.Sum256(payload)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/releases/latest.json":
+			fmt.Fprintf(w, `{"version":"0.2.0","files":[{"os":"windows","arch":"amd64","url":"/downloads/portlight.exe","sha256":"%x"}]}`, sum)
+		case "/downloads/portlight.exe":
+			_, _ = w.Write(payload)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	exe := filepath.Join(t.TempDir(), "portlight.exe")
+	if err := os.WriteFile(exe, []byte("old-binary"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	restore := setUpdateTestHooks(t, "windows", "amd64", exe)
+	defer restore()
+
+	var stdout, stderr bytes.Buffer
+	code := run([]string{"update", "--server", srv.URL}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("exit = %d, stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+	}
+	data, err := os.ReadFile(exe)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != string(payload) {
+		t.Fatalf("updated file = %q", data)
+	}
+	if !strings.Contains(stdout.String(), "updated portlight") {
+		t.Fatalf("stdout = %q, want updated message", stdout.String())
 	}
 }
 
@@ -174,5 +250,29 @@ func TestRunExposeJSONNameConflict(t *testing.T) {
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("timed out waiting for first Expose to stop")
+	}
+}
+
+func setUpdateTestHooks(t *testing.T, goos, goarch, exe string) func() {
+	t.Helper()
+	oldGOOS := updateGOOS
+	oldGOARCH := updateGOARCH
+	oldExecutable := updateExecutable
+	oldApply := updateApply
+	updateGOOS = goos
+	updateGOARCH = goarch
+	updateExecutable = func() (string, error) { return exe, nil }
+	updateApply = func(downloaded, target string) error {
+		data, err := os.ReadFile(downloaded)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(target, data, 0o755)
+	}
+	return func() {
+		updateGOOS = oldGOOS
+		updateGOARCH = oldGOARCH
+		updateExecutable = oldExecutable
+		updateApply = oldApply
 	}
 }

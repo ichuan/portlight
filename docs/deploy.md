@@ -1,6 +1,7 @@
 # Deploy portlight
 
-portlight is designed to run on small servers. The recommended deployment is a standalone binary behind Caddy.
+portlight is designed to run on small servers. The recommended deployment for
+`portlight.616.pub` is Docker Compose behind the host Caddy instance.
 
 ## DNS
 
@@ -9,6 +10,61 @@ Point both the base host and wildcard host to your server:
 ```text
 preview.example.com
 *.preview.example.com
+```
+
+## Docker Compose
+
+Create a deployment directory on the server:
+
+```bash
+mkdir -p /home/yc/portlight
+cd /home/yc/portlight
+printf 'PORTLIGHT_VERSION=%s\n' '0.2.0' > .env
+printf 'PORTLIGHT_TOKEN=%s\n' "$(openssl rand -base64 32)" >> .env
+chmod 0600 .env
+```
+
+Copy the repository contents to that directory, build release downloads, and
+start the containers:
+
+```bash
+docker compose up -d --build
+```
+
+The compose file exposes only localhost ports:
+
+- `127.0.0.1:8789` for the tunnel backend;
+- `127.0.0.1:8790` for the static website and release downloads.
+
+Add these blocks to the existing host Caddyfile without replacing unrelated
+sites:
+
+```caddyfile
+portlight.616.pub {
+    encode zstd gzip
+
+    @backend path /_control/* /healthz /readyz
+    handle @backend {
+        reverse_proxy 127.0.0.1:8789
+    }
+
+    handle {
+        reverse_proxy 127.0.0.1:8790
+    }
+}
+
+*.portlight.616.pub {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:8789
+}
+```
+
+Check the deployment:
+
+```bash
+curl -fsS https://portlight.616.pub/healthz
+curl -fsS https://portlight.616.pub/readyz
+curl -fsS https://portlight.616.pub/releases/latest.json
 ```
 
 ## Binary + systemd
@@ -95,29 +151,6 @@ Request a name:
 portlight expose --server https://preview.example.com --port 3000 --name myapp
 ```
 
-## Optional Docker Compose
-
-Binary + systemd uses less memory and is recommended for small servers. Docker Compose is still possible:
-
-```yaml
-services:
-  portlight:
-    image: portlight:latest
-    restart: unless-stopped
-    environment:
-      PORTLIGHT_TOKEN: change-me
-    command:
-      - server
-      - --listen
-      - 0.0.0.0:8789
-      - --public-base
-      - https://preview.example.com
-    ports:
-      - "127.0.0.1:8789:8789"
-```
-
-Keep Caddy on the host and reverse proxy to `127.0.0.1:8789`.
-
 ## Build Release Binaries
 
 Build release binaries with Go 1.26.4 or newer. Earlier Go 1.26 patch
@@ -127,6 +160,12 @@ From a Windows development machine:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-release.ps1 -Version 0.1.0
+```
+
+To publish downloads into the static website:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-release.ps1 -Version 0.2.0 -PublishSite
 ```
 
 The script builds:
