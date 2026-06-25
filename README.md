@@ -114,6 +114,9 @@ Copy this to a remote coding agent when it needs to open or test a local service
 ```text
 Use portlight when you need a public HTTPS URL for a local HTTP service.
 
+If portlight is already installed, run `portlight skill` for the full agent
+guide.
+
 If portlight is missing, install it:
 macOS/Linux: curl -fsSL https://portlight.616.pub/install.sh | sh
 Windows PowerShell: irm https://portlight.616.pub/install.ps1 | iex
@@ -245,3 +248,7 @@ See [docs/deploy.md](docs/deploy.md).
 The static product website lives in [site/](site/). Open
 [site/index.html](site/index.html) directly in a browser or serve the folder
 from any static host.
+
+## License
+
+MIT

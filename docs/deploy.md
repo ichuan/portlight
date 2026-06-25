@@ -19,7 +19,7 @@ The deploy directory contains `.env`. This file is required on the server and
 must not be committed or copied into logs:
 
 ```text
-PORTLIGHT_VERSION=0.1.2
+PORTLIGHT_VERSION=0.1.3
 PORTLIGHT_TOKEN=<secret>
 ```
 
@@ -228,7 +228,7 @@ Create a deployment directory on the server:
 ```bash
 mkdir -p /home/yc/portlight
 cd /home/yc/portlight
-printf 'PORTLIGHT_VERSION=%s\n' '0.1.2' > .env
+printf 'PORTLIGHT_VERSION=%s\n' '0.1.3' > .env
 printf 'PORTLIGHT_TOKEN=%s\n' "$(openssl rand -base64 32)" >> .env
 chmod 0600 .env
 ```
@@ -394,7 +394,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-release.ps1 -V
 To publish downloads into the static website:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-release.ps1 -Version 0.1.2 -PublishSite
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-release.ps1 -Version 0.1.3 -PublishSite
 ```
 
 Client release versions start at `0.1.0`; use `0.1.1`, `0.1.2`, and so on for

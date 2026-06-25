@@ -64,6 +64,7 @@ func TestRunSkill(t *testing.T) {
 	for _, want := range []string{
 		"PORTLIGHT_TOKEN",
 		"Copy-paste prompt",
+		"full agent guide",
 		"portlight expose --port",
 		"--json",
 		"trap",

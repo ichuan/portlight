@@ -25,12 +25,15 @@
         <img src="assets/portlight-logo.svg" alt="" width="32" height="32" />
         <span>portlight</span>
       </a>
-      <nav class="nav" aria-label="Primary navigation">
-        <a href="#downloads">Downloads</a>
-        <a href="#agents">Agents</a>
-        <a href="#how">Usage</a>
-        <a href="#deploy">Deploy</a>
-      </nav>
+      <div class="header-actions">
+        <nav class="nav" aria-label="Primary navigation">
+          <a href="#downloads">Downloads</a>
+          <a href="#agents">Agents</a>
+          <a href="#how">Usage</a>
+          <a href="#deploy">Deploy</a>
+        </nav>
+        <a class="github-link" href="https://github.com/ichuan/portlight">GitHub</a>
+      </div>
     </header>
 
     <main id="top">
@@ -193,6 +196,8 @@ $ portlight expose --port 3000 --json</code></pre>
               <button class="copy-button" type="button" data-copy-target="agent-prompt">Copy</button>
             </div>
             <pre><code id="agent-prompt">Use portlight when you need a public HTTPS URL for a local HTTP service.
+
+If portlight is already installed, run `portlight skill` for the full agent guide.
 
 If portlight is missing, install it:
 macOS/Linux: curl -fsSL https://portlight.616.pub/install.sh | sh
