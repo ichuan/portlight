@@ -408,9 +408,43 @@ func copyHeaders(dst, src http.Header) {
 			continue
 		}
 		for _, value := range values {
+			value = sanitizeIngressResponseHeader(key, value)
+			if value == "" {
+				continue
+			}
 			dst.Add(key, value)
 		}
 	}
+}
+
+func sanitizeIngressResponseHeader(key, value string) string {
+	switch strings.ToLower(key) {
+	case "x-frame-options":
+		return ""
+	case "content-security-policy":
+		return stripFrameAncestors(value)
+	default:
+		return value
+	}
+}
+
+func stripFrameAncestors(policy string) string {
+	var kept []string
+	for _, part := range strings.Split(policy, ";") {
+		directive := strings.TrimSpace(part)
+		if directive == "" {
+			continue
+		}
+		name := directive
+		if i := strings.IndexAny(directive, " \t\r\n"); i >= 0 {
+			name = directive[:i]
+		}
+		if strings.EqualFold(name, "frame-ancestors") {
+			continue
+		}
+		kept = append(kept, directive)
+	}
+	return strings.Join(kept, "; ")
 }
 
 func isHopByHop(key string) bool {

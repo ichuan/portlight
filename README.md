@@ -216,6 +216,22 @@ Public tunnel URLs are anonymous by default; anyone with the URL can access the
 exposed local HTTP service. Use a long random value in production and keep it
 out of source control.
 
+## Iframe previews
+
+Tunnel responses are intended to work in preview iframes. Portlight removes
+response headers from the exposed local service that would block embedding:
+
+- `X-Frame-Options`
+- the `frame-ancestors` directive inside `Content-Security-Policy`
+
+The page that embeds the preview must still allow the tunnel origin in its own
+CSP, for example:
+
+```text
+frame-src https://*.portlight.616.pub;
+child-src https://*.portlight.616.pub;
+```
+
 Linux/macOS:
 
 ```bash

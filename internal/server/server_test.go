@@ -193,7 +193,7 @@ func TestControlRejectsCrossOriginBrowserRequest(t *testing.T) {
 	_ = allowed.Close(websocket.StatusNormalClosure, "")
 }
 
-func TestIngressProxiesThroughWorkerAndFiltersHopByHopResponseHeaders(t *testing.T) {
+func TestIngressProxiesThroughWorkerAndFiltersResponseHeaders(t *testing.T) {
 	srv := newTestServer(t, server.Config{
 		PublicBase:          "https://preview.example.com",
 		Token:               "secret",
@@ -247,8 +247,10 @@ func TestIngressProxiesThroughWorkerAndFiltersHopByHopResponseHeaders(t *testing
 			ProtoMinor:    1,
 			ContentLength: int64(len("proxied")),
 			Header: http.Header{
-				"Connection":       {"close"},
-				"X-Portlight-Test": {"ok"},
+				"Connection":              {"close"},
+				"Content-Security-Policy": {"default-src 'self'; frame-ancestors 'none'; img-src data:"},
+				"X-Frame-Options":         {"DENY"},
+				"X-Portlight-Test":        {"ok"},
 			},
 			Body: io.NopCloser(strings.NewReader("proxied")),
 		}
@@ -278,6 +280,12 @@ func TestIngressProxiesThroughWorkerAndFiltersHopByHopResponseHeaders(t *testing
 	}
 	if got := res.Header.Get("Connection"); got != "" {
 		t.Fatalf("Connection header = %q, want filtered", got)
+	}
+	if got := res.Header.Get("X-Frame-Options"); got != "" {
+		t.Fatalf("X-Frame-Options = %q, want filtered", got)
+	}
+	if got := res.Header.Get("Content-Security-Policy"); got != "default-src 'self'; img-src data:" {
+		t.Fatalf("Content-Security-Policy = %q, want frame-ancestors removed", got)
 	}
 	select {
 	case err := <-workerDone:
