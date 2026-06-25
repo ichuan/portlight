@@ -56,6 +56,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return 0
 	case "expose":
 		return runExpose(args[1:], stdout, stderr)
+	case "serve":
+		return runServe(args[1:], stdout, stderr)
 	case "update":
 		return runUpdate(args[1:], stdout, stderr)
 	case "uninstall":
@@ -257,6 +259,7 @@ func printUsage(w io.Writer) {
 
 Commands:
   expose   expose a local HTTP port
+  serve    serve a directory and expose it
   update   update this portlight binary
   uninstall remove this portlight binary
   skill    print agent and CI usage guidance
@@ -264,6 +267,7 @@ Commands:
 
 Examples:
   portlight expose --port 3000
+  portlight serve
   portlight update
   portlight uninstall
   portlight skill`)
@@ -365,13 +369,18 @@ Copy-paste prompt for another agent:
   Start the local service first, then run:
   portlight expose --port <port> --ttl 30m --json
 
+  If you only need to share files from a directory, run this inside that
+  directory instead:
+  portlight serve --ttl 30m --json
+
   Read the JSON ready event and use the url field. Keep the command running
   while the URL is needed. Stop the process, or wait for TTL, to close the URL.
   Do not print the token in logs.
 
 Recommended agent flow:
-  1. Start the local HTTP service first and wait for its health check.
-  2. Start portlight expose in the background with --json.
+  1. Start the local HTTP service first and wait for its health check, or use
+     portlight serve when the task is only to share files from a directory.
+  2. Start portlight expose or portlight serve in the background with --json.
   3. Read the JSON "ready" event and give the URL to the browser, webhook, or test.
   4. Stop portlight when the task is done. The tunnel closes when the CLI exits.
 
@@ -391,6 +400,12 @@ POSIX shell pattern:
 
   URL=$(python3 -c 'import json; print(json.load(open("portlight.json"))["url"])')
   echo "$URL"
+
+Directory sharing:
+  portlight serve --dir ./public --ttl 30m --json
+
+  Directory listing is enabled. Hidden files and directories such as .git and
+  .env are not served unless --include-hidden is set.
 
 TTL:
   Tunnel lifetime is the expose process lifetime. Use --ttl to make the CLI exit

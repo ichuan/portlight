@@ -6,11 +6,15 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -54,6 +58,207 @@ func TestRunExposeHelpShowsDefaultServer(t *testing.T) {
 	}
 }
 
+func TestRunServeHelp(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code := run([]string{"serve", "--help"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("exit = %d, stderr=%s", code, stderr.String())
+	}
+	out := stdout.String()
+	for _, want := range []string{"Usage:", "--dir", "--port", "--ttl", "--json", "--include-hidden"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("help output missing %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestFilteredFileSystemListsVisibleFilesAndBlocksHidden(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "visible.txt"), []byte("ok"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, ".env"), []byte("secret"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	srv := httptest.NewServer(http.FileServer(filteredFileSystem{root: root}))
+	defer srv.Close()
+
+	body := httpGetString(t, srv.URL+"/")
+	if !strings.Contains(body, "visible.txt") {
+		t.Fatalf("listing missing visible file:\n%s", body)
+	}
+	if strings.Contains(body, ".env") {
+		t.Fatalf("listing exposed hidden file:\n%s", body)
+	}
+	res, err := http.Get(srv.URL + "/.env")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = res.Body.Close()
+	if res.StatusCode != http.StatusNotFound {
+		t.Fatalf("hidden file status = %d, want 404", res.StatusCode)
+	}
+}
+
+func TestFilteredFileSystemCanIncludeHidden(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, ".env"), []byte("secret"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	srv := httptest.NewServer(http.FileServer(filteredFileSystem{root: root, includeHidden: true}))
+	defer srv.Close()
+
+	if body := httpGetString(t, srv.URL+"/"); !strings.Contains(body, ".env") {
+		t.Fatalf("listing missing hidden file with includeHidden=true:\n%s", body)
+	}
+	if body := httpGetString(t, srv.URL+"/.env"); body != "secret" {
+		t.Fatalf("hidden file body = %q, want secret", body)
+	}
+}
+
+func TestFilteredFileSystemRejectsSymlinkToHiddenFile(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, ".env"), []byte("secret"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(root, "visible-link")
+	if err := os.Symlink(".env", link); err != nil {
+		t.Skipf("symlink unavailable: %v", err)
+	}
+	srv := httptest.NewServer(http.FileServer(filteredFileSystem{root: root}))
+	defer srv.Close()
+
+	if body := httpGetString(t, srv.URL+"/"); strings.Contains(body, "visible-link") {
+		t.Fatalf("listing exposed symlink:\n%s", body)
+	}
+	res, err := http.Get(srv.URL + "/visible-link")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = res.Body.Close()
+	if res.StatusCode != http.StatusNotFound {
+		t.Fatalf("symlink status = %d, want 404", res.StatusCode)
+	}
+}
+
+func TestRunServeRejectsSymlinkRoot(t *testing.T) {
+	parent := t.TempDir()
+	target := filepath.Join(parent, ".hidden-root")
+	if err := os.Mkdir(target, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(parent, "public")
+	if err := os.Symlink(target, link); err != nil {
+		t.Skipf("symlink unavailable: %v", err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	code := run([]string{"serve", "--dir", link, "--ttl", "1ns", "--token", "secret"}, &stdout, &stderr)
+	if code == 0 {
+		t.Fatalf("exit = 0, want symlink root rejection; stdout=%s stderr=%s", stdout.String(), stderr.String())
+	}
+}
+
+func TestRunServePublishesDirectoryListingAndBlocksHiddenFiles(t *testing.T) {
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "visible.txt"), []byte("ok"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, ".env"), []byte("secret"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	tunnel := newReachableTunnel(t, server.Config{
+		Token:               "secret",
+		MaxTunnels:          4,
+		MaxWorkersPerTunnel: 2,
+		RequestTimeout:      time.Second,
+		RandomName:          func() (string, error) { return "serve-test", nil },
+	})
+	defer tunnel.Close()
+
+	var stdout lockedBuffer
+	var stderr lockedBuffer
+	codeCh := make(chan int, 1)
+	go func() {
+		codeCh <- run([]string{
+			"serve",
+			"--server", tunnel.URL,
+			"--token", "secret",
+			"--dir", root,
+			"--ttl", "800ms",
+			"--json",
+		}, &stdout, &stderr)
+	}()
+	ready := waitReadyJSON(t, &stdout)
+	publicURL, err := url.Parse(ready.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req, err := http.NewRequest(http.MethodGet, tunnel.URL+"/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Host = publicURL.Host
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, _ := io.ReadAll(res.Body)
+	_ = res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("listing status = %d, body=%s", res.StatusCode, body)
+	}
+	if !strings.Contains(string(body), "visible.txt") {
+		t.Fatalf("listing missing visible file:\n%s", body)
+	}
+	if strings.Contains(string(body), ".env") {
+		t.Fatalf("listing exposed hidden file:\n%s", body)
+	}
+
+	req, err = http.NewRequest(http.MethodGet, tunnel.URL+"/.env", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Host = publicURL.Host
+	res, err = http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = res.Body.Close()
+	if res.StatusCode != http.StatusNotFound {
+		t.Fatalf("hidden file status = %d, want 404", res.StatusCode)
+	}
+
+	select {
+	case code := <-codeCh:
+		if code != 0 {
+			t.Fatalf("exit = %d, stdout=%s stderr=%s", code, stdout.String(), stderr.String())
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for serve command to exit")
+	}
+}
+
+func TestRunServeReturnsErrorWhenTTLExpiresBeforeReady(t *testing.T) {
+	root := t.TempDir()
+	var stdout, stderr bytes.Buffer
+	code := run([]string{
+		"serve",
+		"--server", "http://10.255.255.1",
+		"--token", "secret",
+		"--dir", root,
+		"--ttl", "1ns",
+		"--json",
+	}, &stdout, &stderr)
+	if code == 0 {
+		t.Fatalf("exit = 0, want non-zero before ready; stdout=%s stderr=%s", stdout.String(), stderr.String())
+	}
+	if strings.TrimSpace(stdout.String()) != "" {
+		t.Fatalf("stdout = %q, want no ready JSON", stdout.String())
+	}
+}
+
 func TestRunSkill(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	code := run([]string{"skill"}, &stdout, &stderr)
@@ -65,6 +270,7 @@ func TestRunSkill(t *testing.T) {
 		"PORTLIGHT_TOKEN",
 		"Copy-paste prompt",
 		"full agent guide",
+		"portlight serve",
 		"portlight expose --port",
 		"--json",
 		"trap",
@@ -505,4 +711,76 @@ func setUpdateTestHooks(t *testing.T, goos, goarch, exe string) func() {
 		updateExecutable = oldExecutable
 		updateApply = oldApply
 	}
+}
+
+func httpGetString(t *testing.T, url string) string {
+	t.Helper()
+	res, err := http.Get(url)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer res.Body.Close()
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("%s status = %d, body=%s", url, res.StatusCode, body)
+	}
+	return string(body)
+}
+
+func newReachableTunnel(t *testing.T, cfg server.Config) *httptest.Server {
+	t.Helper()
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg.PublicBase = "http://" + listener.Addr().String()
+	app, err := server.New(cfg)
+	if err != nil {
+		_ = listener.Close()
+		t.Fatal(err)
+	}
+	srv := httptest.NewUnstartedServer(app.Handler())
+	srv.Listener = listener
+	srv.Start()
+	return srv
+}
+
+type lockedBuffer struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func (b *lockedBuffer) Write(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.Write(p)
+}
+
+func (b *lockedBuffer) String() string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.String()
+}
+
+func (b *lockedBuffer) Bytes() []byte {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return append([]byte(nil), b.buf.Bytes()...)
+}
+
+func waitReadyJSON(t *testing.T, out *lockedBuffer) client.Ready {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		var ready client.Ready
+		if err := json.Unmarshal(out.Bytes(), &ready); err == nil && ready.Status == "ready" {
+			return ready
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	t.Fatalf("timed out waiting for ready JSON; stdout=%s", out.String())
+	return client.Ready{}
 }

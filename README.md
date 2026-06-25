@@ -8,6 +8,12 @@ Run a small server behind a wildcard domain, then run the CLI on your laptop or 
 portlight expose --port 3000
 ```
 
+To share files from the current directory, run:
+
+```bash
+portlight serve
+```
+
 The CLI prints a URL such as:
 
 ```text
@@ -107,6 +113,23 @@ portlight expose --port 3000 --json
 {"status":"ready","name":"k9m2x4qa","url":"https://k9m2x4qa.preview.example.com","target":"http://127.0.0.1:3000"}
 ```
 
+## Directory sharing
+
+Serve the current directory and expose it with one command:
+
+```bash
+portlight serve
+```
+
+Use a specific directory or TTL:
+
+```bash
+portlight serve --dir ./public --ttl 30m
+```
+
+Directory listing is enabled. Hidden files and directories such as `.git` and
+`.env` are not served unless you pass `--include-hidden`.
+
 ## Agent handoff prompt
 
 Copy this to a remote coding agent when it needs to open or test a local service:
@@ -126,6 +149,9 @@ with --token <token> or set PORTLIGHT_TOKEN for this shell.
 
 Start the local service first, then run:
 portlight expose --port <port> --ttl 30m --json
+
+If you only need to share files from a directory, run this inside that directory instead:
+portlight serve --ttl 30m --json
 
 Read the JSON ready event and use the url field. Keep the command running while
 the URL is needed. Stop the process, or wait for TTL, to close the URL. Do not
@@ -160,6 +186,7 @@ When the original CLI process exits or disconnects, the name is released.
 
 ```bash
 portlight expose --help
+portlight serve --help
 portlight update
 portlight skill
 portlight --version
@@ -173,7 +200,8 @@ only when you run a separate portlight deployment.
 `portlight-server` binary or Docker image.
 
 `portlight skill` prints concise agent and CI guidance for exposing a local
-service, reading the JSON ready URL, setting a TTL, and cleaning up the tunnel.
+service or directory, reading the JSON ready URL, setting a TTL, and cleaning
+up the tunnel.
 
 Important environment variable:
 
@@ -183,7 +211,7 @@ PORTLIGHT_TOKEN
 
 CLI connections to the server require this bearer token. Set it with an
 environment variable, or pass `--token <token>` to `portlight-server` or
-`portlight expose`.
+`portlight expose` / `portlight serve`.
 Public tunnel URLs are anonymous by default; anyone with the URL can access the
 exposed local HTTP service. Use a long random value in production and keep it
 out of source control.

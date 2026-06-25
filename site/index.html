@@ -75,11 +75,11 @@ Press Ctrl+C to stop.</code></pre>
       <section class="section downloads" id="downloads" aria-labelledby="downloads-title" data-screen-label="Downloads">
         <div class="section-head">
           <p class="eyebrow">Downloads</p>
-          <h2 id="downloads-title">Install, then expose a local port.</h2>
+          <h2 id="downloads-title">Install, then expose a local port or directory.</h2>
           <p>
             Use the install command below. Set <code>PORTLIGHT_TOKEN</code> or
-            pass <code>--token</code>, then run
-            <code>portlight expose --port 3000</code>.
+            pass <code>--token</code>, then run <code>portlight expose</code>
+            for an app or <code>portlight serve</code> for files.
           </p>
         </div>
 
@@ -188,7 +188,8 @@ Press Ctrl+C to stop.</code></pre>
           </p>
           <div class="agent-commands">
             <pre><code>$ portlight skill
-$ portlight expose --port 3000 --json</code></pre>
+$ portlight expose --port 3000 --json
+$ portlight serve --json</code></pre>
           </div>
           <div class="agent-prompt-card">
             <div class="install-box-head">
@@ -207,6 +208,9 @@ Use PORTLIGHT_TOKEN if it is already set. If the user gives you a token, pass it
 
 Start the local service first, then run:
 portlight expose --port &lt;port&gt; --ttl 30m --json
+
+If you only need to share files from a directory, run this inside that directory instead:
+portlight serve --ttl 30m --json
 
 Read the JSON ready event and use the url field. Keep the command running while the URL is needed. Stop the process, or wait for TTL, to close the URL. Do not print the token in logs.</code></pre>
           </div>
@@ -227,8 +231,8 @@ Read the JSON ready event and use the url field. Keep the command running while 
           <p class="eyebrow">What it is for</p>
           <h2 id="product-title">Use it when localhost needs to be reachable.</h2>
           <p>
-            Previews, webhooks, demos, and agents often need a real HTTPS URL.
-            Portlight gives one to the app already running on your machine.
+            Previews, webhooks, file handoffs, and agents often need a real
+            HTTPS URL. Portlight gives one to your local app or directory.
           </p>
         </div>
         <div class="feature-grid">
@@ -237,12 +241,12 @@ Read the JSON ready event and use the url field. Keep the command running while 
             <p>Open a local app on another device or share it with someone.</p>
           </article>
           <article class="feature">
-            <h3>Webhook testing</h3>
-            <p>Receive callbacks while your app runs on your machine.</p>
+            <h3>File handoffs</h3>
+            <p>Serve a directory with listing and share it in one command.</p>
           </article>
           <article class="feature">
-            <h3>Demos</h3>
-            <p>Create a readable temporary URL for a short session.</p>
+            <h3>Webhook testing</h3>
+            <p>Receive callbacks while your app runs on your machine.</p>
           </article>
           <article class="feature">
             <h3>Automation</h3>
@@ -254,11 +258,10 @@ Read the JSON ready event and use the url field. Keep the command running while 
       <section class="section how" id="how" aria-labelledby="how-title" data-screen-label="How it works">
         <div class="section-head">
           <p class="eyebrow">Usage</p>
-          <h2 id="how-title">The basic flow is one local port and one command.</h2>
+          <h2 id="how-title">The basic flow is one token and one command.</h2>
           <p>
-            Start your app as usual. Keep the portlight command running while
-            the URL should work. Use <code>--ttl</code> or stop the command to
-            close the URL.
+            Start your app as usual, or let portlight serve a directory for
+            you. Keep the command running while the URL should work.
           </p>
         </div>
         <div class="step-grid">
@@ -276,8 +279,10 @@ portlight expose --token &lt;token&gt; ...</code></pre>
           </article>
           <article class="step">
             <span>02</span>
-            <h3>Expose a port</h3>
-            <pre><code>portlight expose --port 3000 --ttl 30m</code></pre>
+            <h3>Expose or serve</h3>
+            <pre><code>portlight expose --port 3000 --ttl 30m
+
+portlight serve --dir ./public --ttl 30m</code></pre>
           </article>
           <article class="step">
             <span>03</span>
@@ -313,8 +318,8 @@ portlight expose --token &lt;token&gt; ...</code></pre>
               <ul class="compact-list">
                 <li>HTTP only.</li>
                 <li>URLs live while the CLI is running.</li>
+                <li>Hidden files are skipped by <code>serve</code>.</li>
                 <li>No account dashboard.</li>
-                <li>No persistent aliases yet.</li>
               </ul>
             </div>
           </div>

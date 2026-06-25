@@ -19,7 +19,7 @@ The deploy directory contains `.env`. This file is required on the server and
 must not be committed or copied into logs:
 
 ```text
-PORTLIGHT_VERSION=0.1.3
+PORTLIGHT_VERSION=0.1.4
 PORTLIGHT_TOKEN=<secret>
 ```
 
@@ -108,7 +108,7 @@ Build and publish release downloads into `site/downloads/` and
 `site/releases/`:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-release.ps1 -Version 0.1.3 -PublishSite
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-release.ps1 -Version 0.1.4 -PublishSite
 ```
 
 Upload the working tree to the server while preserving the server `.env`:
@@ -121,7 +121,7 @@ tar --exclude=.git --exclude=dist --exclude=tmp --exclude=.env --exclude=site/as
 Update the server release version and rebuild:
 
 ```bash
-ssh ind "cd /home/yc/portlight && sed -i 's/^PORTLIGHT_VERSION=.*/PORTLIGHT_VERSION=0.1.3/' .env"
+ssh ind "cd /home/yc/portlight && sed -i 's/^PORTLIGHT_VERSION=.*/PORTLIGHT_VERSION=0.1.4/' .env"
 ssh ind "cd /home/yc/portlight && docker compose up -d --build"
 ssh ind "cd /home/yc/portlight && docker compose ps"
 ```
@@ -228,7 +228,7 @@ Create a deployment directory on the server:
 ```bash
 mkdir -p /home/yc/portlight
 cd /home/yc/portlight
-printf 'PORTLIGHT_VERSION=%s\n' '0.1.3' > .env
+printf 'PORTLIGHT_VERSION=%s\n' '0.1.4' > .env
 printf 'PORTLIGHT_TOKEN=%s\n' "$(openssl rand -base64 32)" >> .env
 chmod 0600 .env
 ```
@@ -349,6 +349,12 @@ export PORTLIGHT_TOKEN='<the same long random token>'
 ./portlight expose --server https://preview.example.com --port 3000 --json
 ```
 
+Serve and expose a directory:
+
+```bash
+./portlight serve --server https://preview.example.com --dir ./public --ttl 30m
+```
+
 Windows PowerShell:
 
 ```powershell
@@ -394,7 +400,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-release.ps1 -V
 To publish downloads into the static website:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-release.ps1 -Version 0.1.3 -PublishSite
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-release.ps1 -Version 0.1.4 -PublishSite
 ```
 
 Client release versions start at `0.1.0`; use `0.1.1`, `0.1.2`, and so on for
