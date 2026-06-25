@@ -3,6 +3,7 @@ tmp/
 /portlight
 site/downloads/
 site/releases/
+site/assets/prompts/
 *.exe
 *.test
 *.out

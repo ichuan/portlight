@@ -93,14 +93,18 @@ func Run(ctx context.Context, cfg Config) (Result, error) {
 		result.AlreadyLatest = true
 		return result, nil
 	}
-	if cfg.CheckOnly {
-		return result, nil
-	}
 	if cfg.ExecutablePath == "" {
 		cfg.ExecutablePath, err = os.Executable()
 		if err != nil {
 			return Result{}, err
 		}
+	}
+	if matches, err := fileMatchesSHA256(cfg.ExecutablePath, file.SHA256); err == nil && matches {
+		result.AlreadyLatest = true
+		return result, nil
+	}
+	if cfg.CheckOnly {
+		return result, nil
 	}
 	tmp, err := downloadAndVerify(ctx, cfg.Client, downloadURL, file.SHA256, cfg.ExecutablePath)
 	if err != nil {
@@ -232,6 +236,23 @@ func parseVersion(version string) ([]int, bool) {
 		numbers[i] = n
 	}
 	return numbers, true
+}
+
+func fileMatchesSHA256(path, wantSHA string) (bool, error) {
+	if wantSHA == "" {
+		return false, nil
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return false, err
+	}
+	defer file.Close()
+	hash := sha256.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return false, err
+	}
+	gotSHA := hex.EncodeToString(hash.Sum(nil))
+	return strings.EqualFold(gotSHA, wantSHA), nil
 }
 
 func downloadAndVerify(ctx context.Context, client *http.Client, rawURL, wantSHA, executablePath string) (string, error) {

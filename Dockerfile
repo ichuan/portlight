@@ -7,13 +7,13 @@ RUN go mod download
 COPY . .
 ARG VERSION=dev
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-  go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" \
-  -o /out/portlight ./cmd/portlight
+  go build -trimpath -ldflags "-s -w -buildid= -X main.version=${VERSION}" \
+  -o /out/portlight-server ./cmd/portlight-server
 
 FROM alpine:3.22
 
 RUN adduser -D -H -s /sbin/nologin portlight
-COPY --from=build /out/portlight /usr/local/bin/portlight
+COPY --from=build /out/portlight-server /usr/local/bin/portlight-server
 USER portlight
 
-ENTRYPOINT ["portlight"]
+ENTRYPOINT ["portlight-server"]

@@ -3,17 +3,18 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>portlight - local HTTP previews on public HTTPS URLs</title>
+    <title>portlight - share local apps with HTTPS URLs</title>
     <meta
       name="description"
-      content="portlight exposes local HTTP apps through public HTTPS URLs you control, using a tiny Go CLI and server."
+      content="portlight gives local apps temporary HTTPS URLs for previews, webhooks, demos, and coding agents."
     />
     <meta property="og:title" content="portlight" />
     <meta
       property="og:description"
-      content="Expose local HTTP apps through public HTTPS URLs you control."
+      content="Temporary HTTPS URLs for local apps, previews, webhooks, demos, and coding agents."
     />
     <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://portlight.616.pub/assets/portlight-hero.webp" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="styles.css" />
@@ -21,199 +22,312 @@
   <body>
     <header class="site-header">
       <a class="brand" href="#top" aria-label="portlight home">
-        <span class="brand-mark" aria-hidden="true"></span>
+        <img src="assets/portlight-logo.svg" alt="" width="32" height="32" />
         <span>portlight</span>
       </a>
       <nav class="nav" aria-label="Primary navigation">
-        <a href="#product">Product</a>
-        <a href="#how">How it works</a>
-        <a href="#usage">Usage</a>
         <a href="#downloads">Downloads</a>
+        <a href="#agents">Agents</a>
+        <a href="#how">Usage</a>
         <a href="#deploy">Deploy</a>
       </nav>
     </header>
 
     <main id="top">
-      <section class="hero" aria-labelledby="hero-title">
-        <div class="hero-visual" aria-hidden="true">
-          <img src="assets/portlight-tunnel.webp" alt="" />
-        </div>
+      <section class="hero" aria-labelledby="hero-title" data-screen-label="Hero">
+        <picture class="hero-art" aria-hidden="true">
+          <img src="assets/portlight-hero.webp" alt="" />
+        </picture>
         <div class="hero-content">
+          <p class="eyebrow">Turn localhost into a public HTTPS link.</p>
           <h1 id="hero-title">portlight</h1>
           <p class="hero-copy">
-            Expose local HTTP apps through public HTTPS URLs you control.
+            Portlight makes your local app reachable from the internet. If it
+            is on <code>localhost:3000</code>, expose port 3000 and share the
+            URL it prints.
           </p>
           <div class="hero-actions">
-            <a class="button primary" href="#usage">View usage</a>
-            <a class="button secondary" href="#deploy">Deploy notes</a>
+            <a class="button primary" id="primary-download" href="#downloads">
+              <span aria-hidden="true">↓</span>
+              <span>Install portlight</span>
+            </a>
+            <a class="button secondary" href="#agents">
+              <span aria-hidden="true">›</span>
+              <span>Agent guide</span>
+            </a>
           </div>
-          <div class="terminal" aria-label="Example command and output">
+          <div class="hero-terminal" aria-label="Example command and ready output">
+            <div class="terminal-top">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
             <pre><code>$ portlight expose --port 3000
-https://myapp.preview.example.com</code></pre>
+Exposed http://127.0.0.1:3000 as https://demo.portlight.616.pub
+Press Ctrl+C to stop.</code></pre>
           </div>
         </div>
       </section>
 
-      <section class="section intro" id="product" aria-labelledby="product-title">
+      <section class="section downloads" id="downloads" aria-labelledby="downloads-title" data-screen-label="Downloads">
         <div class="section-head">
-          <h2 id="product-title">Built for local-first work</h2>
+          <p class="eyebrow">Downloads</p>
+          <h2 id="downloads-title">Install, then expose a local port.</h2>
           <p>
-            One binary, no database, no account system. Tunnels live only while
-            the CLI process stays connected.
+            Use the install command below. Set <code>PORTLIGHT_TOKEN</code> or
+            pass <code>--token</code>, then run
+            <code>portlight expose --port 3000</code>.
+          </p>
+        </div>
+
+        <div class="release-line" aria-live="polite">
+          <span id="latest-version">Loading release info...</span>
+          <span>Verified downloads</span>
+        </div>
+
+        <div class="platform-tabs" role="tablist" aria-label="Download platform">
+          <button class="platform-tab" id="tab-darwin" type="button" role="tab" aria-controls="panel-darwin" aria-selected="false" data-tab="darwin">macOS</button>
+          <button class="platform-tab" id="tab-windows" type="button" role="tab" aria-controls="panel-windows" aria-selected="false" data-tab="windows">Windows</button>
+          <button class="platform-tab" id="tab-linux" type="button" role="tab" aria-controls="panel-linux" aria-selected="false" data-tab="linux">Linux</button>
+        </div>
+
+        <div class="download-panels">
+          <article class="download-card" id="panel-darwin" role="tabpanel" aria-labelledby="tab-darwin" data-platform="darwin" hidden>
+            <div class="download-card-head">
+              <svg class="os-mark" viewBox="0 0 48 48" aria-hidden="true">
+                <path d="M31.7 6.1c.2 2.7-.8 5-2.4 6.8-1.6 1.8-3.8 3.1-6.1 2.9-.3-2.6.8-4.9 2.3-6.6 1.7-1.9 4.2-3.3 6.2-3.1Z"></path>
+                <path d="M39 33.4c-.9 2.1-1.3 3-2.5 4.9-1.6 2.5-3.9 5.7-6.8 5.7-2.5 0-3.2-1.7-6.7-1.7-3.4 0-4.2 1.7-6.6 1.7-2.9.1-5.2-3-6.8-5.5-4.7-7.2-5.2-15.6-2.3-20.1 2-3.1 5.2-4.9 8.2-4.9 3.1 0 5 1.7 7.5 1.7 2.5 0 4-1.7 7.6-1.7 2.7 0 5.6 1.5 7.6 4.1-6.7 3.7-5.6 13.3.8 15.8Z"></path>
+              </svg>
+              <div>
+                <h3>macOS</h3>
+                <p>Install with one command, or choose a build below.</p>
+              </div>
+            </div>
+            <div class="install-box">
+              <div class="install-box-head">
+                <span>Install command</span>
+                <button class="copy-button" type="button" data-copy-target="install-darwin">Copy</button>
+              </div>
+              <pre><code id="install-darwin" data-install="darwin">Release info is loading.</code></pre>
+            </div>
+            <div class="manual-downloads">
+              <h4>Manual downloads</h4>
+              <div class="download-actions" data-downloads="darwin">Loading...</div>
+            </div>
+          </article>
+
+          <article class="download-card" id="panel-windows" role="tabpanel" aria-labelledby="tab-windows" data-platform="windows" hidden>
+            <div class="download-card-head">
+              <svg class="os-mark windows-mark" viewBox="0 0 48 48" aria-hidden="true">
+                <path d="M5 9.8 22 7.5v15.4H5V9.8Zm19.7-2.6L43 4.5v18.4H24.7V7.2ZM5 25.5h17v15L5 38.2V25.5Zm19.7 0H43v18L24.7 40.9V25.5Z"></path>
+              </svg>
+              <div>
+                <h3>Windows</h3>
+                <p>Install with PowerShell, or download manually.</p>
+              </div>
+            </div>
+            <div class="install-box">
+              <div class="install-box-head">
+                <span>Install command</span>
+                <button class="copy-button" type="button" data-copy-target="install-windows">Copy</button>
+              </div>
+              <pre><code id="install-windows" data-install="windows">Release info is loading.</code></pre>
+            </div>
+            <div class="manual-downloads">
+              <h4>Manual downloads</h4>
+              <div class="download-actions" data-downloads="windows">Loading...</div>
+            </div>
+          </article>
+
+          <article class="download-card" id="panel-linux" role="tabpanel" aria-labelledby="tab-linux" data-platform="linux" hidden>
+            <div class="download-card-head">
+              <svg class="os-mark linux-mark" viewBox="0 0 48 48" aria-hidden="true">
+                <circle cx="24" cy="24" r="18"></circle>
+                <path d="M17 18.5 24 24l-7 5.5M27 30h8"></path>
+              </svg>
+              <div>
+                <h3>Linux</h3>
+                <p>Install from the shell, or download manually.</p>
+              </div>
+            </div>
+            <div class="install-box">
+              <div class="install-box-head">
+                <span>Install command</span>
+                <button class="copy-button" type="button" data-copy-target="install-linux">Copy</button>
+              </div>
+              <pre><code id="install-linux" data-install="linux">Release info is loading.</code></pre>
+            </div>
+            <div class="manual-downloads">
+              <h4>Manual downloads</h4>
+              <div class="download-actions" data-downloads="linux">Loading...</div>
+            </div>
+          </article>
+        </div>
+
+        <div class="update-strip">
+          <span>Already installed?</span>
+          <code>portlight update</code>
+          <span>checks for a newer release.</span>
+          <code>portlight uninstall</code>
+          <span>removes the CLI.</span>
+        </div>
+      </section>
+
+      <section class="section agents" id="agents" aria-labelledby="agents-title" data-screen-label="Agents">
+        <div class="agent-copy">
+          <p class="eyebrow">Agent workflows</p>
+          <h2 id="agents-title">Give agents the URL, not your localhost.</h2>
+          <p>
+            Remote coding agents and remote-controlled browsers cannot always
+            reach your private <code>localhost</code>. Give them a portlight URL
+            when they need to inspect a preview, receive a callback, or call a
+            local service.
+          </p>
+          <div class="agent-commands">
+            <pre><code>$ portlight skill
+$ portlight expose --port 3000 --json</code></pre>
+          </div>
+          <div class="agent-prompt-card">
+            <div class="install-box-head">
+              <span>Copy for another agent</span>
+              <button class="copy-button" type="button" data-copy-target="agent-prompt">Copy</button>
+            </div>
+            <pre><code id="agent-prompt">Use portlight when you need a public HTTPS URL for a local HTTP service.
+
+If portlight is missing, install it:
+macOS/Linux: curl -fsSL https://portlight.616.pub/install.sh | sh
+Windows PowerShell: irm https://portlight.616.pub/install.ps1 | iex
+
+Use PORTLIGHT_TOKEN if it is already set. If the user gives you a token, pass it with --token &lt;token&gt; or set PORTLIGHT_TOKEN for this shell.
+
+Start the local service first, then run:
+portlight expose --port &lt;port&gt; --ttl 30m --json
+
+Read the JSON ready event and use the url field. Keep the command running while the URL is needed. Stop the process, or wait for TTL, to close the URL. Do not print the token in logs.</code></pre>
+          </div>
+          <ul class="compact-list">
+            <li>Run <code>portlight skill</code> for the agent-facing guide.</li>
+            <li>Use <code>--json</code> when the agent should read the URL.</li>
+            <li>Use <code>--ttl</code> when the link should expire automatically.</li>
+            <li>Stop the command to close the URL.</li>
+          </ul>
+        </div>
+        <figure class="agent-figure">
+          <img src="assets/portlight-agent-workflow.webp" alt="Abstract agent workflow routed from a terminal to browser and webhook targets" />
+        </figure>
+      </section>
+
+      <section class="section product" aria-labelledby="product-title" data-screen-label="Product">
+        <div class="section-head">
+          <p class="eyebrow">What it is for</p>
+          <h2 id="product-title">Use it when localhost needs to be reachable.</h2>
+          <p>
+            Previews, webhooks, demos, and agents often need a real HTTPS URL.
+            Portlight gives one to the app already running on your machine.
           </p>
         </div>
         <div class="feature-grid">
           <article class="feature">
-            <h3>Dev previews</h3>
-            <p>Put a local app on a controlled public URL without changing how it runs.</p>
+            <h3>Previews</h3>
+            <p>Open a local app on another device or share it with someone.</p>
           </article>
           <article class="feature">
             <h3>Webhook testing</h3>
-            <p>Receive callbacks from external services against a local HTTP server.</p>
+            <p>Receive callbacks while your app runs on your machine.</p>
           </article>
           <article class="feature">
             <h3>Demos</h3>
-            <p>Share a temporary preview with a teammate or stakeholder.</p>
+            <p>Create a readable temporary URL for a short session.</p>
           </article>
           <article class="feature">
-            <h3>Agent workflows</h3>
-            <p>Give coding agents a stable preview URL while they iterate locally.</p>
+            <h3>Automation</h3>
+            <p>Return JSON when CI or an agent needs to capture the URL.</p>
           </article>
         </div>
       </section>
 
-      <section class="section flow-section" id="how" aria-labelledby="how-title">
+      <section class="section how" id="how" aria-labelledby="how-title" data-screen-label="How it works">
         <div class="section-head">
-          <h2 id="how-title">How it works</h2>
+          <p class="eyebrow">Usage</p>
+          <h2 id="how-title">The basic flow is one local port and one command.</h2>
           <p>
-            The public server accepts wildcard subdomain traffic and forwards
-            each HTTP request over an authenticated worker connection.
+            Start your app as usual. Keep the portlight command running while
+            the URL should work. Use <code>--ttl</code> or stop the command to
+            close the URL.
           </p>
         </div>
-        <div class="flow">
+        <div class="step-grid">
           <article class="step">
-            <span class="step-number">01</span>
-            <h3>Run the server</h3>
-            <pre><code>PORTLIGHT_TOKEN=&lt;long-random-token&gt;
-portlight server \
-  --listen 127.0.0.1:8789 \
-  --public-base https://preview.example.com</code></pre>
+            <span>01</span>
+            <h3>Provide the token</h3>
+            <pre><code># macOS / Linux
+export PORTLIGHT_TOKEN=&lt;token&gt;
+
+# Windows PowerShell
+$env:PORTLIGHT_TOKEN='&lt;token&gt;'
+
+# Or pass it directly
+portlight expose --token &lt;token&gt; ...</code></pre>
           </article>
           <article class="step">
-            <span class="step-number">02</span>
+            <span>02</span>
             <h3>Expose a port</h3>
-            <pre><code>portlight expose \
-  --port 3000</code></pre>
+            <pre><code>portlight expose --port 3000 --ttl 30m</code></pre>
           </article>
           <article class="step">
-            <span class="step-number">03</span>
+            <span>03</span>
             <h3>Share the URL</h3>
-            <pre><code>https://myapp.preview.example.com
--> http://127.0.0.1:3000</code></pre>
+            <pre><code>https://name.portlight.616.pub</code></pre>
           </article>
         </div>
       </section>
 
-      <section class="section usage" id="usage" aria-labelledby="usage-title">
-        <div class="section-head">
-          <h2 id="usage-title">Usage</h2>
-          <p>
-            Use a random name for quick previews, request a readable name for
-            demos, or emit JSON for scripts.
-          </p>
-        </div>
-        <div class="usage-layout">
-          <div class="commands">
-            <div class="command-block">
-              <h3>Random URL</h3>
-              <pre><code>portlight expose --port 3000</code></pre>
-            </div>
-            <div class="command-block">
-              <h3>Machine-readable output</h3>
-              <pre><code>portlight expose --port 3000 --json</code></pre>
-            </div>
-            <div class="command-block">
-              <h3>Named URL</h3>
-              <pre><code>portlight expose --port 3000 --name myapp</code></pre>
-            </div>
+      <section class="section deploy" id="deploy" aria-labelledby="deploy-title" data-screen-label="Deploy">
+        <div class="deploy-inner">
+          <div class="deploy-copy">
+            <p class="eyebrow">Self-hosting</p>
+            <h2 id="deploy-title">Run your own endpoint when you need control.</h2>
+            <p>
+              Use the hosted server for quick work, or deploy your own endpoint
+              for team and private infrastructure. Expose only services you intend
+              to share.
+            </p>
           </div>
-          <div class="json-sample">
-            <h3>JSON ready event</h3>
-            <pre><code>{
-  "status": "ready",
-  "name": "myapp",
-  "url": "https://myapp.preview.example.com"
-}</code></pre>
-          </div>
-        </div>
-      </section>
-
-      <section class="section downloads" id="downloads" aria-labelledby="downloads-title">
-        <div class="section-head">
-          <h2 id="downloads-title">Downloads</h2>
-          <p>
-            Install the latest binary for your platform, then keep it current
-            with one command.
-          </p>
-        </div>
-        <div class="download-panel">
-          <div>
-            <h3>Latest version</h3>
-            <p class="version-line" id="latest-version">Release metadata loads from /releases/latest.json.</p>
-            <pre><code>portlight update
-chmod +x ./portlight-linux-amd64</code></pre>
-          </div>
-          <div class="download-list" id="download-list" aria-live="polite">
-            <p>Run the release build to publish downloadable binaries.</p>
-          </div>
-        </div>
-      </section>
-
-      <section class="section deploy" id="deploy" aria-labelledby="deploy-title">
-        <div class="section-head">
-          <h2 id="deploy-title">Deploy</h2>
-          <p>
-            portlight expects your reverse proxy to handle HTTPS and wildcard
-            certificates. Keep the Go server private on localhost.
-          </p>
-        </div>
-        <div class="deploy-grid">
-          <div class="checklist" aria-label="Deployment checklist">
-            <div class="check-row">
-              <span aria-hidden="true"></span>
-              <p>Wildcard DNS points both base and subdomains to your server.</p>
+          <div class="deploy-lists">
+            <div>
+              <h3>Before launch</h3>
+              <ul class="compact-list">
+                <li>Base and wildcard DNS point to the server.</li>
+                <li>HTTPS is enabled for the base and wildcard domains.</li>
+                <li>Control endpoints use a long private token.</li>
+                <li>Docker or systemd restarts the service if it exits.</li>
+              </ul>
             </div>
-            <div class="check-row">
-              <span aria-hidden="true"></span>
-              <p>Caddy terminates HTTPS and proxies to <code>127.0.0.1:8789</code>.</p>
+            <div>
+              <h3>Current limits</h3>
+              <ul class="compact-list">
+                <li>HTTP only.</li>
+                <li>URLs live while the CLI is running.</li>
+                <li>No account dashboard.</li>
+                <li>No persistent aliases yet.</li>
+              </ul>
             </div>
-            <div class="check-row">
-              <span aria-hidden="true"></span>
-              <p>systemd keeps the server alive and restarts it on failure.</p>
-            </div>
-            <div class="check-row">
-              <span aria-hidden="true"></span>
-              <p><code>PORTLIGHT_TOKEN</code> protects control endpoints.</p>
-            </div>
-          </div>
-          <div class="limits">
-            <h3>Limits in v1</h3>
-            <ul>
-              <li>HTTP only</li>
-              <li>Browser WebSocket/HMR not supported yet</li>
-              <li>No persistent aliases</li>
-              <li>No account system</li>
-            </ul>
           </div>
         </div>
       </section>
     </main>
 
     <footer class="footer">
-      <span>portlight</span>
-      <a href="https://github.com/ichuan/portlight#readme">README</a>
-      <a href="https://github.com/ichuan/portlight/blob/main/docs/deploy.md">Deploy</a>
-      <a href="https://github.com/ichuan/portlight">GitHub</a>
+      <a class="brand footer-brand" href="#top" aria-label="portlight home">
+        <img src="assets/portlight-logo.svg" alt="" width="28" height="28" />
+        <span>portlight</span>
+      </a>
+      <p class="footer-copy">© 2026 yc. Public links for local work.</p>
+      <nav aria-label="Footer navigation">
+        <a href="https://github.com/ichuan/portlight#readme">README</a>
+        <a href="https://github.com/ichuan/portlight/blob/main/docs/deploy.md">Deploy</a>
+        <a href="https://github.com/ichuan/portlight">GitHub</a>
+      </nav>
     </footer>
     <script src="releases.js"></script>
   </body>

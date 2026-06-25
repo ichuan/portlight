@@ -8,7 +8,6 @@ services:
     environment:
       PORTLIGHT_TOKEN: ${PORTLIGHT_TOKEN:?set PORTLIGHT_TOKEN in .env}
     command:
-      - server
       - --listen
       - 0.0.0.0:8789
       - --public-base

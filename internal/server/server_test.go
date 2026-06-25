@@ -162,6 +162,37 @@ func TestWorkerRejectsUnauthorizedAndUnknownTunnel(t *testing.T) {
 	}
 }
 
+func TestControlRejectsCrossOriginBrowserRequest(t *testing.T) {
+	srv := newTestServer(t, server.Config{
+		PublicBase:          "https://preview.example.com",
+		Token:               "secret",
+		MaxTunnels:          4,
+		MaxWorkersPerTunnel: 2,
+		RequestTimeout:      20 * time.Millisecond,
+		RandomName:          func() (string, error) { return "random", nil },
+	})
+	defer srv.Close()
+
+	opts := dialOptions("secret")
+	opts.HTTPHeader.Set("Origin", "https://evil.example")
+	conn, resp, err := websocket.Dial(context.Background(), controlURL(t, srv.URL, "demo"), opts)
+	if conn != nil {
+		_ = conn.Close(websocket.StatusNormalClosure, "")
+	}
+	if err == nil {
+		t.Fatal("cross-origin dial succeeded, want HTTP error")
+	}
+	if resp == nil {
+		t.Fatalf("missing HTTP response: %v", err)
+	}
+	if resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("status = %d, want 403", resp.StatusCode)
+	}
+
+	allowed := dialControl(t, srv.URL, "secret", "demo")
+	_ = allowed.Close(websocket.StatusNormalClosure, "")
+}
+
 func TestIngressProxiesThroughWorkerAndFiltersHopByHopResponseHeaders(t *testing.T) {
 	srv := newTestServer(t, server.Config{
 		PublicBase:          "https://preview.example.com",
