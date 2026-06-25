@@ -35,7 +35,7 @@ portlight is meant for development previews, demos, webhook testing, and agent-d
 Start the public server:
 
 ```bash
-export PORTLIGHT_TOKEN='change-me'
+export PORTLIGHT_TOKEN="$(openssl rand -base64 32)"
 portlight server \
   --listen 127.0.0.1:8789 \
   --public-base https://preview.example.com
@@ -44,7 +44,7 @@ portlight server \
 Expose a local port:
 
 ```bash
-export PORTLIGHT_TOKEN='change-me'
+export PORTLIGHT_TOKEN='<the same long random token>'
 portlight expose --server https://preview.example.com --port 3000
 ```
 
@@ -97,6 +97,7 @@ PORTLIGHT_TOKEN
 ```
 
 CLI connections to the server require this bearer token. Public tunnel URLs are anonymous by default; anyone with the URL can access the exposed local HTTP service.
+Use a long random value in production and keep it out of source control.
 
 ## Limits in v1
 
@@ -109,3 +110,9 @@ CLI connections to the server require this bearer token. Public tunnel URLs are 
 ## Deploy
 
 See [docs/deploy.md](docs/deploy.md).
+
+## Website
+
+The static product website lives in [site/](site/). Open
+[site/index.html](site/index.html) directly in a browser or serve the folder
+from any static host.

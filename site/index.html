@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>portlight - local HTTP previews on public HTTPS URLs</title>
+    <meta
+      name="description"
+      content="portlight exposes local HTTP apps through public HTTPS URLs you control, using a tiny Go CLI and server."
+    />
+    <meta property="og:title" content="portlight" />
+    <meta
+      property="og:description"
+      content="Expose local HTTP apps through public HTTPS URLs you control."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="portlight home">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>portlight</span>
+      </a>
+      <nav class="nav" aria-label="Primary navigation">
+        <a href="#product">Product</a>
+        <a href="#how">How it works</a>
+        <a href="#usage">Usage</a>
+        <a href="#deploy">Deploy</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-visual" aria-hidden="true">
+          <img src="assets/portlight-tunnel.webp" alt="" />
+        </div>
+        <div class="hero-content">
+          <h1 id="hero-title">portlight</h1>
+          <p class="hero-copy">
+            Expose local HTTP apps through public HTTPS URLs you control.
+          </p>
+          <div class="hero-actions">
+            <a class="button primary" href="#usage">View usage</a>
+            <a class="button secondary" href="#deploy">Deploy notes</a>
+          </div>
+          <div class="terminal" aria-label="Example command and output">
+            <pre><code>$ portlight expose --server https://preview.example.com --port 3000
+https://myapp.preview.example.com</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="section intro" id="product" aria-labelledby="product-title">
+        <div class="section-head">
+          <h2 id="product-title">Built for local-first work</h2>
+          <p>
+            One binary, no database, no account system. Tunnels live only while
+            the CLI process stays connected.
+          </p>
+        </div>
+        <div class="feature-grid">
+          <article class="feature">
+            <h3>Dev previews</h3>
+            <p>Put a local app on a controlled public URL without changing how it runs.</p>
+          </article>
+          <article class="feature">
+            <h3>Webhook testing</h3>
+            <p>Receive callbacks from external services against a local HTTP server.</p>
+          </article>
+          <article class="feature">
+            <h3>Demos</h3>
+            <p>Share a temporary preview with a teammate or stakeholder.</p>
+          </article>
+          <article class="feature">
+            <h3>Agent workflows</h3>
+            <p>Give coding agents a stable preview URL while they iterate locally.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section flow-section" id="how" aria-labelledby="how-title">
+        <div class="section-head">
+          <h2 id="how-title">How it works</h2>
+          <p>
+            The public server accepts wildcard subdomain traffic and forwards
+            each HTTP request over an authenticated worker connection.
+          </p>
+        </div>
+        <div class="flow">
+          <article class="step">
+            <span class="step-number">01</span>
+            <h3>Run the server</h3>
+            <pre><code>PORTLIGHT_TOKEN=&lt;long-random-token&gt;
+portlight server \
+  --listen 127.0.0.1:8789 \
+  --public-base https://preview.example.com</code></pre>
+          </article>
+          <article class="step">
+            <span class="step-number">02</span>
+            <h3>Expose a port</h3>
+            <pre><code>portlight expose \
+  --server https://preview.example.com \
+  --port 3000</code></pre>
+          </article>
+          <article class="step">
+            <span class="step-number">03</span>
+            <h3>Share the URL</h3>
+            <pre><code>https://myapp.preview.example.com
+-> http://127.0.0.1:3000</code></pre>
+          </article>
+        </div>
+      </section>
+
+      <section class="section usage" id="usage" aria-labelledby="usage-title">
+        <div class="section-head">
+          <h2 id="usage-title">Usage</h2>
+          <p>
+            Use a random name for quick previews, request a readable name for
+            demos, or emit JSON for scripts.
+          </p>
+        </div>
+        <div class="usage-layout">
+          <div class="commands">
+            <div class="command-block">
+              <h3>Random URL</h3>
+              <pre><code>portlight expose --server https://preview.example.com --port 3000</code></pre>
+            </div>
+            <div class="command-block">
+              <h3>Machine-readable output</h3>
+              <pre><code>portlight expose --server https://preview.example.com --port 3000 --json</code></pre>
+            </div>
+            <div class="command-block">
+              <h3>Named URL</h3>
+              <pre><code>portlight expose --server https://preview.example.com --port 3000 --name myapp</code></pre>
+            </div>
+          </div>
+          <div class="json-sample">
+            <h3>JSON ready event</h3>
+            <pre><code>{
+  "status": "ready",
+  "name": "myapp",
+  "url": "https://myapp.preview.example.com"
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="section deploy" id="deploy" aria-labelledby="deploy-title">
+        <div class="section-head">
+          <h2 id="deploy-title">Deploy</h2>
+          <p>
+            portlight expects your reverse proxy to handle HTTPS and wildcard
+            certificates. Keep the Go server private on localhost.
+          </p>
+        </div>
+        <div class="deploy-grid">
+          <div class="checklist" aria-label="Deployment checklist">
+            <div class="check-row">
+              <span aria-hidden="true"></span>
+              <p>Wildcard DNS points both base and subdomains to your server.</p>
+            </div>
+            <div class="check-row">
+              <span aria-hidden="true"></span>
+              <p>Caddy terminates HTTPS and proxies to <code>127.0.0.1:8789</code>.</p>
+            </div>
+            <div class="check-row">
+              <span aria-hidden="true"></span>
+              <p>systemd keeps the server alive and restarts it on failure.</p>
+            </div>
+            <div class="check-row">
+              <span aria-hidden="true"></span>
+              <p><code>PORTLIGHT_TOKEN</code> protects control endpoints.</p>
+            </div>
+          </div>
+          <div class="limits">
+            <h3>Limits in v1</h3>
+            <ul>
+              <li>HTTP only</li>
+              <li>Browser WebSocket/HMR not supported yet</li>
+              <li>No persistent aliases</li>
+              <li>No account system</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>portlight</span>
+      <a href="https://github.com/ichuan/portlight#readme">README</a>
+      <a href="https://github.com/ichuan/portlight/blob/main/docs/deploy.md">Deploy</a>
+      <a href="https://github.com/ichuan/portlight">GitHub</a>
+    </footer>
+  </body>
+</html>

@@ -17,6 +17,7 @@ import (
 func TestExposeProxiesHTTP(t *testing.T) {
 	local := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Portlight-Test", "ok")
+		w.Header().Set("X-Seen-Proxy-Authorization", r.Header.Get("Proxy-Authorization"))
 		w.WriteHeader(http.StatusCreated)
 		_, _ = io.WriteString(w, "local:"+r.URL.Path+"?"+r.URL.RawQuery)
 	}))
@@ -52,6 +53,7 @@ func TestExposeProxiesHTTP(t *testing.T) {
 		t.Fatal(err)
 	}
 	req.Host = "demo.preview.example.com"
+	req.Header.Set("Proxy-Authorization", "Bearer leaked")
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatal(err)
@@ -63,6 +65,9 @@ func TestExposeProxiesHTTP(t *testing.T) {
 	}
 	if got := res.Header.Get("X-Portlight-Test"); got != "ok" {
 		t.Fatalf("header = %q, want ok", got)
+	}
+	if got := res.Header.Get("X-Seen-Proxy-Authorization"); got != "" {
+		t.Fatalf("Proxy-Authorization reached local service: %q", got)
 	}
 	if string(body) != "local:/hello?x=1" {
 		t.Fatalf("body = %q", body)
@@ -165,6 +170,9 @@ func TestExposeReportsNameConflictAndReleasesNameOnCancel(t *testing.T) {
 	if !client.IsNameInUse(conflict) {
 		t.Fatalf("conflict error = %v, want name_in_use", conflict)
 	}
+	if got := conflict.Error(); got != "name_in_use: demo" {
+		t.Fatalf("conflict error text = %q, want name_in_use: demo", got)
+	}
 
 	cancel()
 	if err := <-errCh; err != nil && err != context.Canceled {
@@ -233,6 +241,43 @@ func TestExposeReturnsBadGatewayWhenUpstreamUnavailable(t *testing.T) {
 	cancel()
 	if err := <-errCh; err != nil && err != context.Canceled {
 		t.Fatalf("Expose returned %v", err)
+	}
+}
+
+func TestExposeValidatesConfig(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  client.Config
+	}{
+		{
+			name: "missing server URL",
+			cfg:  client.Config{Token: "secret", Port: 3000},
+		},
+		{
+			name: "missing token",
+			cfg:  client.Config{ServerURL: "http://example.com", Port: 3000},
+		},
+		{
+			name: "missing port",
+			cfg:  client.Config{ServerURL: "http://example.com", Token: "secret"},
+		},
+		{
+			name: "port too high",
+			cfg:  client.Config{ServerURL: "http://example.com", Token: "secret", Port: 65536},
+		},
+		{
+			name: "unsupported server scheme",
+			cfg:  client.Config{ServerURL: "ftp://example.com", Token: "secret", Port: 3000},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			if err := client.Expose(ctx, tt.cfg); err == nil {
+				t.Fatal("Expose succeeded, want error")
+			}
+		})
 	}
 }
 

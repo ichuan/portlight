@@ -1,8 +1,10 @@
 package server_test
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -67,6 +69,36 @@ func TestControlRejectsNameInUseAndCleanupAllowsReuse(t *testing.T) {
 	}
 }
 
+func TestControlRejectsUnauthorizedInvalidNameAndTooManyTunnels(t *testing.T) {
+	srv := newTestServer(t, server.Config{
+		PublicBase:          "https://preview.example.com",
+		Token:               "secret",
+		MaxTunnels:          1,
+		MaxWorkersPerTunnel: 2,
+		RequestTimeout:      20 * time.Millisecond,
+		RandomName:          func() (string, error) { return "random", nil },
+	})
+	defer srv.Close()
+
+	unauthorized := dialControlExpectHTTP(t, srv.URL, "wrong", "demo")
+	if unauthorized.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("unauthorized status = %d, want 401", unauthorized.StatusCode)
+	}
+
+	invalid := dialControlExpectHTTP(t, srv.URL, "secret", "Bad_Name")
+	if invalid.StatusCode != http.StatusBadRequest {
+		t.Fatalf("invalid name status = %d, want 400", invalid.StatusCode)
+	}
+
+	first := dialControl(t, srv.URL, "secret", "demo")
+	defer first.Close(websocket.StatusNormalClosure, "")
+
+	tooMany := dialControlExpectHTTP(t, srv.URL, "secret", "other")
+	if tooMany.StatusCode != http.StatusServiceUnavailable {
+		t.Fatalf("too many status = %d, want 503", tooMany.StatusCode)
+	}
+}
+
 func TestIngressErrors(t *testing.T) {
 	srv := newTestServer(t, server.Config{
 		PublicBase:          "https://preview.example.com",
@@ -108,6 +140,124 @@ func TestIngressErrors(t *testing.T) {
 	}
 }
 
+func TestWorkerRejectsUnauthorizedAndUnknownTunnel(t *testing.T) {
+	srv := newTestServer(t, server.Config{
+		PublicBase:          "https://preview.example.com",
+		Token:               "secret",
+		MaxTunnels:          4,
+		MaxWorkersPerTunnel: 2,
+		RequestTimeout:      20 * time.Millisecond,
+		RandomName:          func() (string, error) { return "random", nil },
+	})
+	defer srv.Close()
+
+	unauthorized := dialWorkerExpectHTTP(t, srv.URL, "wrong", "demo")
+	if unauthorized.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("unauthorized worker status = %d, want 401", unauthorized.StatusCode)
+	}
+
+	unknown := dialWorkerExpectHTTP(t, srv.URL, "secret", "missing")
+	if unknown.StatusCode != http.StatusNotFound {
+		t.Fatalf("unknown worker status = %d, want 404", unknown.StatusCode)
+	}
+}
+
+func TestIngressProxiesThroughWorkerAndFiltersHopByHopResponseHeaders(t *testing.T) {
+	srv := newTestServer(t, server.Config{
+		PublicBase:          "https://preview.example.com",
+		Token:               "secret",
+		MaxTunnels:          4,
+		MaxWorkersPerTunnel: 2,
+		RequestTimeout:      time.Second,
+		RandomName:          func() (string, error) { return "random", nil },
+	})
+	defer srv.Close()
+
+	control := dialControl(t, srv.URL, "secret", "demo")
+	defer control.CloseNow()
+
+	workerCtx, workerCancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer workerCancel()
+	worker, _, err := websocket.Dial(workerCtx, workerURL(t, srv.URL, "demo"), dialOptions("secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer worker.CloseNow()
+	workerConn := websocket.NetConn(context.Background(), worker, websocket.MessageBinary)
+	defer workerConn.Close()
+
+	workerDone := make(chan error, 1)
+	go func() {
+		defer workerConn.Close()
+		req, err := http.ReadRequest(bufio.NewReader(workerConn))
+		if err != nil {
+			workerDone <- err
+			return
+		}
+		defer req.Body.Close()
+		body, err := io.ReadAll(req.Body)
+		if err != nil {
+			workerDone <- err
+			return
+		}
+		if req.Method != http.MethodPost || req.URL.Path != "/submit" || req.URL.RawQuery != "x=1" {
+			workerDone <- &testError{msg: "unexpected proxied request line: " + req.Method + " " + req.URL.String()}
+			return
+		}
+		if string(body) != "payload" {
+			workerDone <- &testError{msg: "unexpected proxied body: " + string(body)}
+			return
+		}
+		resp := &http.Response{
+			StatusCode:    http.StatusAccepted,
+			Status:        "202 Accepted",
+			Proto:         "HTTP/1.1",
+			ProtoMajor:    1,
+			ProtoMinor:    1,
+			ContentLength: int64(len("proxied")),
+			Header: http.Header{
+				"Connection":       {"close"},
+				"X-Portlight-Test": {"ok"},
+			},
+			Body: io.NopCloser(strings.NewReader("proxied")),
+		}
+		workerDone <- resp.Write(workerConn)
+	}()
+
+	req, err := http.NewRequest(http.MethodPost, srv.URL+"/submit?x=1", strings.NewReader("payload"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Host = "demo.preview.example.com"
+	httpClient := &http.Client{Timeout: 2 * time.Second}
+	res, err := httpClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer res.Body.Close()
+	body, _ := io.ReadAll(res.Body)
+	if res.StatusCode != http.StatusAccepted {
+		t.Fatalf("status = %d, want 202; body=%s", res.StatusCode, body)
+	}
+	if string(body) != "proxied" {
+		t.Fatalf("body = %q, want proxied", body)
+	}
+	if got := res.Header.Get("X-Portlight-Test"); got != "ok" {
+		t.Fatalf("X-Portlight-Test = %q, want ok", got)
+	}
+	if got := res.Header.Get("Connection"); got != "" {
+		t.Fatalf("Connection header = %q, want filtered", got)
+	}
+	select {
+	case err := <-workerDone:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for worker response")
+	}
+}
+
 func TestHealthAndReady(t *testing.T) {
 	srv := newTestServer(t, server.Config{
 		PublicBase:          "https://preview.example.com",
@@ -128,6 +278,33 @@ func TestHealthAndReady(t *testing.T) {
 		if res.StatusCode != http.StatusOK {
 			t.Fatalf("%s status = %d, want 200", path, res.StatusCode)
 		}
+	}
+}
+
+func TestNewRejectsInvalidConfig(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  server.Config
+	}{
+		{
+			name: "missing token",
+			cfg:  server.Config{PublicBase: "https://preview.example.com"},
+		},
+		{
+			name: "missing public base",
+			cfg:  server.Config{Token: "secret"},
+		},
+		{
+			name: "unsupported public base scheme",
+			cfg:  server.Config{PublicBase: "ftp://preview.example.com", Token: "secret"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, err := server.New(tt.cfg); err == nil {
+				t.Fatal("New succeeded, want error")
+			}
+		})
 	}
 }
 
@@ -179,6 +356,23 @@ func dialControlExpectHTTP(t *testing.T, serverURL, token, name string) *http.Re
 	return resp
 }
 
+func dialWorkerExpectHTTP(t *testing.T, serverURL, token, name string) *http.Response {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	conn, resp, err := websocket.Dial(ctx, workerURL(t, serverURL, name), dialOptions(token))
+	if conn != nil {
+		_ = conn.Close(websocket.StatusNormalClosure, "")
+	}
+	if err == nil {
+		t.Fatal("worker dial succeeded, want HTTP error")
+	}
+	if resp == nil {
+		t.Fatalf("missing HTTP response: %v", err)
+	}
+	return resp
+}
+
 func controlURL(t *testing.T, serverURL, name string) string {
 	t.Helper()
 	u, err := url.Parse(serverURL)
@@ -187,6 +381,20 @@ func controlURL(t *testing.T, serverURL, name string) string {
 	}
 	u.Scheme = "ws"
 	u.Path = "/_control/open"
+	q := u.Query()
+	q.Set("name", name)
+	u.RawQuery = q.Encode()
+	return u.String()
+}
+
+func workerURL(t *testing.T, serverURL, name string) string {
+	t.Helper()
+	u, err := url.Parse(serverURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	u.Scheme = "ws"
+	u.Path = "/_control/worker"
 	q := u.Query()
 	q.Set("name", name)
 	u.RawQuery = q.Encode()
@@ -210,4 +418,12 @@ func hostRequest(t *testing.T, serverURL, host, path string) *http.Response {
 	}
 	t.Cleanup(func() { _ = res.Body.Close() })
 	return res
+}
+
+type testError struct {
+	msg string
+}
+
+func (e *testError) Error() string {
+	return e.msg
 }

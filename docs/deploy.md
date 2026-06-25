@@ -24,7 +24,8 @@ Create an environment file:
 
 ```bash
 sudo install -d -m 0750 /etc/portlight
-sudo sh -c "printf '%s\n' 'PORTLIGHT_TOKEN=change-me' > /etc/portlight/portlight.env"
+PORTLIGHT_TOKEN="$(openssl rand -base64 32)"
+printf 'PORTLIGHT_TOKEN=%s\n' "$PORTLIGHT_TOKEN" | sudo tee /etc/portlight/portlight.env >/dev/null
 sudo chmod 0640 /etc/portlight/portlight.env
 ```
 
@@ -77,14 +78,14 @@ curl -fsS https://preview.example.com/readyz
 Linux/macOS:
 
 ```bash
-export PORTLIGHT_TOKEN='change-me'
+export PORTLIGHT_TOKEN='<the same long random token>'
 ./portlight expose --server https://preview.example.com --port 3000 --json
 ```
 
 Windows PowerShell:
 
 ```powershell
-$env:PORTLIGHT_TOKEN='change-me'
+$env:PORTLIGHT_TOKEN='<the same long random token>'
 .\portlight.exe expose --server https://preview.example.com --port 3000 --json
 ```
 
@@ -118,6 +119,9 @@ services:
 Keep Caddy on the host and reverse proxy to `127.0.0.1:8789`.
 
 ## Build Release Binaries
+
+Build release binaries with Go 1.26.4 or newer. Earlier Go 1.26 patch
+releases include standard library vulnerabilities that affect this code path.
 
 From a Windows development machine:
 

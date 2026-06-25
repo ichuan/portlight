@@ -50,6 +50,9 @@ func New(cfg Config) (*App, error) {
 	if err != nil || base.Scheme == "" || base.Host == "" {
 		return nil, fmt.Errorf("invalid public base: %q", cfg.PublicBase)
 	}
+	if base.Scheme != "http" && base.Scheme != "https" {
+		return nil, fmt.Errorf("unsupported public base scheme: %q", base.Scheme)
+	}
 	if cfg.MaxTunnels <= 0 {
 		cfg.MaxTunnels = 64
 	}
