@@ -17,7 +17,7 @@
     <meta property="og:image" content="https://portlight.616.pub/assets/portlight-hero.webp" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css?v=agent-prompt-20260625" />
+    <link rel="stylesheet" href="styles.css?v=agent-layout-20260625" />
   </head>
   <body>
     <header class="site-header">
@@ -191,12 +191,16 @@ Press Ctrl+C to stop.</code></pre>
 $ portlight expose --port 3000 --json
 $ portlight serve --json</code></pre>
           </div>
-          <div class="agent-prompt-card">
-            <div class="install-box-head">
-              <span>Copy for another agent</span>
-              <button class="copy-button" type="button" data-copy-target="agent-prompt">Copy</button>
-            </div>
-            <pre><code id="agent-prompt">Use portlight when you need a public HTTPS URL for a local HTTP service.
+        </div>
+        <figure class="agent-figure">
+          <img src="assets/portlight-agent-workflow.webp" alt="Abstract agent workflow routed from a terminal to browser and webhook targets" />
+        </figure>
+        <div class="agent-prompt-card">
+          <div class="install-box-head">
+            <span>Copy for another agent</span>
+            <button class="copy-button" type="button" data-copy-target="agent-prompt">Copy</button>
+          </div>
+          <pre><code id="agent-prompt">Use portlight when you need a public HTTPS URL for a local HTTP service.
 
 If portlight is already installed, run `portlight skill` for the full agent guide.
 
@@ -213,17 +217,16 @@ If you only need to share files from a directory, run this inside that directory
 portlight serve --ttl 30m --json
 
 Read the JSON ready event and use the url field. Keep the command running while the URL is needed. Stop the process, or wait for TTL, to close the URL. Do not print the token in logs.</code></pre>
-          </div>
+        </div>
+        <aside class="agent-notes" aria-label="Agent checklist">
+          <h3>Agent checklist</h3>
           <ul class="compact-list">
             <li>Run <code>portlight skill</code> for the agent-facing guide.</li>
             <li>Use <code>--json</code> when the agent should read the URL.</li>
             <li>Use <code>--ttl</code> when the link should expire automatically.</li>
             <li>Stop the command to close the URL.</li>
           </ul>
-        </div>
-        <figure class="agent-figure">
-          <img src="assets/portlight-agent-workflow.webp" alt="Abstract agent workflow routed from a terminal to browser and webhook targets" />
-        </figure>
+        </aside>
       </section>
 
       <section class="section product" aria-labelledby="product-title" data-screen-label="Product">
