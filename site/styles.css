@@ -830,9 +830,12 @@ h1 {
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 24px;
+  width: var(--page);
   min-height: 88px;
+  margin: 0 auto 24px;
   padding: 24px 56px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 0;
   background: var(--ink);
   color: rgba(243, 251, 248, 0.72);
 }
