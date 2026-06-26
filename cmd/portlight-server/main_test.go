@@ -31,6 +31,18 @@ func TestRunHelp(t *testing.T) {
 	}
 }
 
+func TestRunHelpDoesNotPrintEnvToken(t *testing.T) {
+	t.Setenv("PORTLIGHT_TOKEN", "super-secret-server-token")
+	var stdout, stderr bytes.Buffer
+	code := run([]string{"--help"}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("exit = %d, stderr=%s", code, stderr.String())
+	}
+	if strings.Contains(stdout.String(), "super-secret-server-token") {
+		t.Fatalf("help output leaked PORTLIGHT_TOKEN:\n%s", stdout.String())
+	}
+}
+
 func TestRunRejectsInvalidConfig(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	code := run([]string{"--public-base", "ftp://preview.example.com", "--token", "secret"}, &stdout, &stderr)

@@ -37,16 +37,20 @@ func run(args []string, stdout, stderr io.Writer) int {
 	fs.Usage = func() { printUsage(stdout) }
 	listen := fs.String("listen", "127.0.0.1:8789", "HTTP listen address")
 	publicBase := fs.String("public-base", "", "public HTTPS base URL, for example https://preview.example.com")
-	token := fs.String("token", os.Getenv("PORTLIGHT_TOKEN"), "server token; defaults to PORTLIGHT_TOKEN")
+	token := fs.String("token", "", "server token; defaults to PORTLIGHT_TOKEN")
 	maxTunnels := fs.Int("max-tunnels", 64, "maximum active tunnels")
 	maxWorkers := fs.Int("max-workers-per-tunnel", 8, "maximum idle workers per tunnel")
 	requestTimeout := fs.Duration("request-timeout", 30*time.Second, "maximum time to wait for a worker")
 	if err := fs.Parse(args); err != nil {
 		return helpExitCode(err)
 	}
+	tokenValue := *token
+	if tokenValue == "" {
+		tokenValue = os.Getenv("PORTLIGHT_TOKEN")
+	}
 	app, err := server.New(server.Config{
 		PublicBase:          *publicBase,
-		Token:               *token,
+		Token:               tokenValue,
 		MaxTunnels:          *maxTunnels,
 		MaxWorkersPerTunnel: *maxWorkers,
 		RequestTimeout:      *requestTimeout,
@@ -73,7 +77,7 @@ func printUsage(w io.Writer) {
 	fs := flag.NewFlagSet("portlight-server", flag.ContinueOnError)
 	fs.String("listen", "127.0.0.1:8789", "HTTP listen address")
 	fs.String("public-base", "", "public HTTPS base URL, for example https://preview.example.com")
-	fs.String("token", os.Getenv("PORTLIGHT_TOKEN"), "server token; defaults to PORTLIGHT_TOKEN")
+	fs.String("token", "", "server token; defaults to PORTLIGHT_TOKEN")
 	fs.Int("max-tunnels", 64, "maximum active tunnels")
 	fs.Int("max-workers-per-tunnel", 8, "maximum idle workers per tunnel")
 	fs.Duration("request-timeout", 30*time.Second, "maximum time to wait for a worker")

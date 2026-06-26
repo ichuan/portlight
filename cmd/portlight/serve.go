@@ -29,7 +29,7 @@ func runServe(args []string, stdout, stderr io.Writer) int {
 		printFlagDefaults(stdout, fs)
 	}
 	serverURL := fs.String("server", defaultServerURL, "portlight server URL")
-	token := fs.String("token", os.Getenv("PORTLIGHT_TOKEN"), "server token; defaults to PORTLIGHT_TOKEN")
+	token := fs.String("token", "", "server token; defaults to PORTLIGHT_TOKEN")
 	dir := fs.String("dir", ".", "directory to serve")
 	port := fs.Int("port", 0, "local HTTP port for the file server; 0 chooses a random port")
 	name := fs.String("name", "", "optional requested public subdomain name")
@@ -66,6 +66,10 @@ func runServe(args []string, stdout, stderr io.Writer) int {
 	if *ttl < 0 {
 		fmt.Fprintln(stderr, "ttl must be positive")
 		return 2
+	}
+	tokenValue := *token
+	if tokenValue == "" {
+		tokenValue = os.Getenv("PORTLIGHT_TOKEN")
 	}
 	root, err := filepath.Abs(serveDir)
 	if err != nil {
@@ -120,7 +124,7 @@ func runServe(args []string, stdout, stderr io.Writer) int {
 	becameReady := false
 	err = client.Expose(ctx, client.Config{
 		ServerURL: *serverURL,
-		Token:     *token,
+		Token:     tokenValue,
 		Name:      *name,
 		LocalHost: "127.0.0.1",
 		Port:      localPort,

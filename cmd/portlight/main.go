@@ -79,7 +79,7 @@ func runExpose(args []string, stdout, stderr io.Writer) int {
 		printFlagDefaults(stdout, fs)
 	}
 	serverURL := fs.String("server", defaultServerURL, "portlight server URL")
-	token := fs.String("token", os.Getenv("PORTLIGHT_TOKEN"), "server token; defaults to PORTLIGHT_TOKEN")
+	token := fs.String("token", "", "server token; defaults to PORTLIGHT_TOKEN")
 	port := fs.Int("port", 0, "local HTTP port to expose")
 	host := fs.String("host", "127.0.0.1", "local HTTP host")
 	name := fs.String("name", "", "optional requested public subdomain name")
@@ -94,6 +94,10 @@ func runExpose(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "ttl must be positive")
 		return 2
 	}
+	tokenValue := *token
+	if tokenValue == "" {
+		tokenValue = os.Getenv("PORTLIGHT_TOKEN")
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	if *ttl > 0 {
@@ -103,7 +107,7 @@ func runExpose(args []string, stdout, stderr io.Writer) int {
 	}
 	err := client.Expose(ctx, client.Config{
 		ServerURL: *serverURL,
-		Token:     *token,
+		Token:     tokenValue,
 		Name:      *name,
 		LocalHost: *host,
 		Port:      *port,

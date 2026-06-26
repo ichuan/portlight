@@ -72,6 +72,26 @@ func TestRunServeHelp(t *testing.T) {
 	}
 }
 
+func TestRunHelpDoesNotPrintEnvToken(t *testing.T) {
+	t.Setenv("PORTLIGHT_TOKEN", "super-secret-help-token")
+	tests := [][]string{
+		{"expose", "--help"},
+		{"serve", "--help"},
+	}
+	for _, args := range tests {
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+			code := run(args, &stdout, &stderr)
+			if code != 0 {
+				t.Fatalf("exit = %d, stderr=%s", code, stderr.String())
+			}
+			if strings.Contains(stdout.String(), "super-secret-help-token") {
+				t.Fatalf("help output leaked PORTLIGHT_TOKEN:\n%s", stdout.String())
+			}
+		})
+	}
+}
+
 func TestFilteredFileSystemListsVisibleFilesAndBlocksHidden(t *testing.T) {
 	root := t.TempDir()
 	if err := os.WriteFile(filepath.Join(root, "visible.txt"), []byte("ok"), 0o644); err != nil {
